@@ -30,7 +30,12 @@ rosidl_generate_interfaces(${PROJECT_NAME} "srv/GetDirection.srv"   DEPENDENCIES
 
 add_executable(patrol_exe src/patrol.cpp)
 ament_target_dependencies(patrol_exe rclcpp geometry_msgs nav_msgs sensor_msgs)
-install(TARGETS patrol_exe DESTINATION lib/${PROJECT_NAME})
+add_executable(direction_server_exe src/direction_service.cpp)
+rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} rosidl_typesupport_cpp)
+target_link_libraries(direction_server_exe ${cpp_typesupport_target})
+
+ament_target_dependencies(direction_server_exe rclcpp geometry_msgs nav_msgs sensor_msgs )
+install(TARGETS patrol_exe direction_server_exe DESTINATION lib/${PROJECT_NAME})
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 
 
