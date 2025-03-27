@@ -9,7 +9,7 @@
 #include <vector>
 
 using namespace std;
-
+using namespace chrono;
 class DirectionService : public rclcpp::Node {
 public:
   using GetDirection = robot_patrol::srv::GetDirection;
@@ -60,26 +60,38 @@ private:
       }
     }
 
-    double avg_left = (count_left > 0) ? sum_left / count_left : 0;
-    double avg_front = (count_front > 0) ? sum_front / count_front : 0;
-    double avg_right = (count_right > 0) ? sum_right / count_right : 0;
+    double total_dist_sec_left = (count_left > 0) ? sum_left / count_left : 0;
+    double total_dist_sec_front =
+        (count_front > 0) ? sum_front / count_front : 0;
+    double total_dist_sec_right =
+        (count_right > 0) ? sum_right / count_right : 0;
 
     string direction;
-    if (avg_front <= 0.35) {
-      if (avg_right >= avg_front && avg_right >= avg_left) { // Swapped logic
+
+    if (total_dist_sec_left > 0.35) {
+    }
+    if (total_dist_sec_front <= 0.35) {
+      if (total_dist_sec_right >= total_dist_sec_front &&
+          total_dist_sec_right >= total_dist_sec_left) {
         direction = "RIGHT";
-      } else if (avg_front >= avg_left && avg_front >= avg_right) {
+        //  rclcpp::sleep_for(500ms);
+      } else if (total_dist_sec_front >= total_dist_sec_left &&
+                 total_dist_sec_front >= total_dist_sec_right) {
+
         direction = "FORWARD";
+
       } else {
         direction = "LEFT";
       }
     } else {
+
       direction = "FORWARD";
     }
 
     RCLCPP_INFO(this->get_logger(),
-                "Avg Left: %.2f, Avg Front: %.2f, Avg Right: %.2f", avg_left,
-                avg_front, avg_right);
+                "Total Left: %.2f, Total Front: %.2f, Total Right: %.2f",
+                total_dist_sec_left, total_dist_sec_front,
+                total_dist_sec_right);
     RCLCPP_INFO(this->get_logger(), "Chosen Direction: %s", direction.c_str());
 
     response->direction = direction;
@@ -87,6 +99,10 @@ private:
 
   rclcpp::Service<GetDirection>::SharedPtr server_;
   rclcpp::CallbackGroup::SharedPtr cb_server;
+
+  bool left_obstacle_flag = false;
+  bool right_obstacle_flag = false;
+  bool front_obstacle_flag = false;
 };
 
 int main(int argc, char *argv[]) {
