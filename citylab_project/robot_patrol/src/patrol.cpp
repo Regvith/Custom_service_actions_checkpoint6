@@ -102,7 +102,6 @@ private:
     //   RCLCPP_WARN(this->get_logger(), "No valid scan data found.");
     // }
 
-    // Optional: trim if you only want valid points
     scan_msg.resize(counter);
     scan_index.resize(counter);
     // RCLCPP_INFO(this->get_logger(), "Yaw: %f", current_yaw);
