@@ -35,27 +35,27 @@ private:
       response->direction = "UNKNOWN";
       return;
     }
-    int start_index_left = range_size / 4;
-    int end_index_left = start_index_left + 110;
-    int front_start_index = end_index_left + 1;
+    int start_index_right = range_size / 4; // Swapped left and right
+    int end_index_right = start_index_right + 110;
+    int front_start_index = end_index_right + 1;
     int front_end_index = front_start_index + 110;
-    int right_start_index = front_end_index + 1;
-    int right_end_index = right_start_index + 110;
+    int left_start_index = front_end_index + 1;
+    int left_end_index = left_start_index + 110;
 
     double sum_left = 0, sum_front = 0, sum_right = 0;
     int count_left = 0, count_front = 0, count_right = 0;
 
-    for (int i = start_index_left; i < right_end_index; i++) {
+    for (int i = start_index_right; i < left_end_index; i++) {
       if (!isinf(request->laser_data.ranges[i])) {
-        if (i >= start_index_left && i < end_index_left) {
-          sum_left += request->laser_data.ranges[i];
-          count_left++;
+        if (i >= start_index_right && i < end_index_right) {
+          sum_right += request->laser_data.ranges[i]; // Right swapped
+          count_right++;
         } else if (i >= front_start_index && i < front_end_index) {
           sum_front += request->laser_data.ranges[i];
           count_front++;
-        } else if (i >= right_start_index && i < right_end_index) {
-          sum_right += request->laser_data.ranges[i];
-          count_right++;
+        } else if (i >= left_start_index && i < left_end_index) {
+          sum_left += request->laser_data.ranges[i]; // Left swapped
+          count_left++;
         }
       }
     }
@@ -65,12 +65,16 @@ private:
     double avg_right = (count_right > 0) ? sum_right / count_right : 0;
 
     string direction;
-    if (avg_left >= avg_front && avg_left >= avg_right) {
-      direction = "LEFT";
-    } else if (avg_front >= avg_left && avg_front >= avg_right) {
-      direction = "FORWARD";
+    if (avg_front <= 0.35) {
+      if (avg_right >= avg_front && avg_right >= avg_left) { // Swapped logic
+        direction = "RIGHT";
+      } else if (avg_front >= avg_left && avg_front >= avg_right) {
+        direction = "FORWARD";
+      } else {
+        direction = "LEFT";
+      }
     } else {
-      direction = "RIGHT";
+      direction = "FORWARD";
     }
 
     RCLCPP_INFO(this->get_logger(),

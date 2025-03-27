@@ -19,7 +19,7 @@ void laser_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
         RCLCPP_INFO(rclcpp::get_logger("test_service"),
                     "Response: direction = %s",
                     result.get()->direction.c_str());
-        rclcpp::shutdown();
+        // rclcpp::shutdown();
       });
 }
 
