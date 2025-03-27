@@ -78,13 +78,13 @@ private:
       cmd.linear.x = 0.1;
       cmd.angular.z = -0.5;
       pub_->publish(cmd);
-      rclcpp::sleep_for(260ms);
+      rclcpp::sleep_for(285ms);
       break;
     case LEFT:
       cmd.linear.x = 0.1;
       cmd.angular.z = 0.5;
       pub_->publish(cmd);
-      rclcpp::sleep_for(260ms);
+      rclcpp::sleep_for(285ms);
       break;
     }
     pub_->publish(cmd);
