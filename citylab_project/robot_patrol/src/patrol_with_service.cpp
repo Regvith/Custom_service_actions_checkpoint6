@@ -7,6 +7,7 @@
 #include "rclcpp/utilities.hpp"
 #include "robot_patrol/srv/get_direction.hpp"
 #include "sensor_msgs/msg/laser_scan.hpp"
+#include <chrono>
 
 using namespace std::chrono;
 using namespace std;
@@ -41,8 +42,8 @@ public:
 
     // Timer to publish velocity commands
     timer_ = this->create_wall_timer(
-        std::chrono::milliseconds(100),
-        std::bind(&TestService::publish_cmd_vel, this), timer_cb);
+        std::chrono::seconds(1), std::bind(&TestService::publish_cmd_vel, this),
+        timer_cb);
   }
 
 private:
@@ -52,10 +53,7 @@ private:
 
   void laser_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
     laser_data_received_ = true;
-    if (!client_->wait_for_service(std::chrono::seconds(1))) {
-      RCLCPP_WARN(this->get_logger(), "Service not available.");
-      return;
-    }
+
     auto request = std::make_shared<robot_patrol::srv::GetDirection::Request>();
     request->laser_data = *msg;
 
@@ -74,22 +72,16 @@ private:
   }
 
   void update_state(const std::string &direction) {
-    // If the robot is already turning, don't interrupt until done
-    if (state_ == RIGHT || state_ == LEFT) {
-      if (delay_counter_ > 0) {
-        return; // Don't switch direction yet
-      }
-    }
 
     if (direction == "FORWARD") {
       state_ = FORWARD;
-      delay_counter_ = 0;
+      // delay_counter_ = 0;
     } else if (direction == "RIGHT") {
       state_ = RIGHT;
-      delay_counter_ = 35; // Ensure a full turn before switching
+      // delay_counter_ = 0; // Ensure a full turn before switching
     } else if (direction == "LEFT") {
       state_ = LEFT;
-      delay_counter_ = 35; // Ensure a full turn before switching
+      //  delay_counter_ = 0; // Ensure a full turn before switching
     }
   }
 
@@ -106,28 +98,31 @@ private:
     case FORWARD:
       cmd.linear.x = 0.1;
       cmd.angular.z = 0.0;
+      pub_->publish(cmd);
       break;
     case RIGHT:
       cmd.linear.x = 0.1; // Reduce speed while turning
-      cmd.angular.z = -0.5;
-      if (delay_counter_ > 0) {
-        delay_counter_--;
-      } else {
-        state_ = FORWARD; // Only switch after delay is done
-      }
+      cmd.angular.z = -0.8;
+      pub_->publish(cmd);
+      //   if (delay_counter_ > 0) {
+      //     delay_counter_--;
+      //   } else {
+      //     state_ = FORWARD; // Only switch after delay is done
+      //   }
       break;
     case LEFT:
       cmd.linear.x = 0.1;
-      cmd.angular.z = 0.5;
-      if (delay_counter_ > 0) {
-        delay_counter_--;
-      } else {
-        state_ = FORWARD; // Only switch after delay is done
-      }
+      cmd.angular.z = 0.8;
+      pub_->publish(cmd);
+      //   if (delay_counter_ > 0) {
+      //     delay_counter_--;
+      //   } else {
+      //     state_ = FORWARD; // Only switch after delay is done
+      //   }
       break;
     }
 
-    pub_->publish(cmd);
+    //  pub_->publish(cmd);
   }
 
   rclcpp::Client<robot_patrol::srv::GetDirection>::SharedPtr client_;

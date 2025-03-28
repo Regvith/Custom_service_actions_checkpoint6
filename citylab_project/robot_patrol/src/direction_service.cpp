@@ -10,6 +10,7 @@
 
 using namespace std;
 using namespace chrono;
+
 class DirectionService : public rclcpp::Node {
 public:
   using GetDirection = robot_patrol::srv::GetDirection;
@@ -23,21 +24,24 @@ public:
         std::bind(&DirectionService::service_callback, this,
                   std::placeholders::_1, std::placeholders::_2),
         rmw_qos_profile_services_default, cb_server);
+
+    RCLCPP_INFO(this->get_logger(), "Service server is ready");
   }
 
 private:
   void
   service_callback(const std::shared_ptr<GetDirection::Request> request,
                    const std::shared_ptr<GetDirection::Response> response) {
+    RCLCPP_INFO(this->get_logger(), "Service request received");
 
     size_t range_size = request->laser_data.ranges.size();
-
-    if (range_size < 330) { // Ensure enough data points
+    if (range_size < 330) {
       RCLCPP_ERROR(this->get_logger(), "Not enough laser data!");
       response->direction = "UNKNOWN";
       return;
     }
-    int start_index_right = range_size / 4; // Swapped left and right
+
+    int start_index_right = range_size / 4;
     int end_index_right = start_index_right + 110;
     int front_start_index = end_index_right + 1;
     int front_end_index = front_start_index + 110;
@@ -50,13 +54,13 @@ private:
     for (int i = start_index_right; i < left_end_index; i++) {
       if (!isinf(request->laser_data.ranges[i])) {
         if (i >= start_index_right && i < end_index_right) {
-          sum_right += request->laser_data.ranges[i]; // Right swapped
+          sum_right += request->laser_data.ranges[i];
           count_right++;
         } else if (i >= front_start_index && i < front_end_index) {
           sum_front += request->laser_data.ranges[i];
           count_front++;
         } else if (i >= left_start_index && i < left_end_index) {
-          sum_left += request->laser_data.ranges[i]; // Left swapped
+          sum_left += request->laser_data.ranges[i];
           count_left++;
         }
       }
@@ -74,17 +78,13 @@ private:
       if (total_dist_sec_right >= total_dist_sec_front &&
           total_dist_sec_right >= total_dist_sec_left) {
         direction = "RIGHT";
-        //  rclcpp::sleep_for(500ms);
       } else if (total_dist_sec_front >= total_dist_sec_left &&
                  total_dist_sec_front >= total_dist_sec_right) {
-
         direction = "FORWARD";
-
       } else {
         direction = "LEFT";
       }
     } else {
-
       direction = "FORWARD";
     }
 
@@ -93,7 +93,9 @@ private:
                 total_dist_sec_left, total_dist_sec_front,
                 total_dist_sec_right);
     RCLCPP_INFO(this->get_logger(), "Chosen Direction: %s", direction.c_str());
+
     response->direction = direction;
+    RCLCPP_INFO(this->get_logger(), "Service request completed");
   }
 
   rclcpp::Service<GetDirection>::SharedPtr server_;
