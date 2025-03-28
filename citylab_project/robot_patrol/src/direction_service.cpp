@@ -15,8 +15,9 @@ public:
   using GetDirection = robot_patrol::srv::GetDirection;
 
   DirectionService() : Node("get_direction_service_node") {
-    cb_server =
-        this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
+    cb_server = this->create_callback_group(
+        rclcpp::CallbackGroupType::MutuallyExclusive);
+
     server_ = this->create_service<GetDirection>(
         "/direction_service",
         std::bind(&DirectionService::service_callback, this,
@@ -28,6 +29,7 @@ private:
   void
   service_callback(const std::shared_ptr<GetDirection::Request> request,
                    const std::shared_ptr<GetDirection::Response> response) {
+
     size_t range_size = request->laser_data.ranges.size();
 
     if (range_size < 330) { // Ensure enough data points
@@ -68,8 +70,6 @@ private:
 
     string direction;
 
-    if (total_dist_sec_left > 0.35) {
-    }
     if (total_dist_sec_front <= 0.35) {
       if (total_dist_sec_right >= total_dist_sec_front &&
           total_dist_sec_right >= total_dist_sec_left) {
@@ -93,22 +93,17 @@ private:
                 total_dist_sec_left, total_dist_sec_front,
                 total_dist_sec_right);
     RCLCPP_INFO(this->get_logger(), "Chosen Direction: %s", direction.c_str());
-
     response->direction = direction;
   }
 
   rclcpp::Service<GetDirection>::SharedPtr server_;
   rclcpp::CallbackGroup::SharedPtr cb_server;
-
-  bool left_obstacle_flag = false;
-  bool right_obstacle_flag = false;
-  bool front_obstacle_flag = false;
 };
 
 int main(int argc, char *argv[]) {
   rclcpp::init(argc, argv);
   std::shared_ptr<DirectionService> node = std::make_shared<DirectionService>();
-  rclcpp::executors::SingleThreadedExecutor executor;
+  rclcpp::executors::MultiThreadedExecutor executor;
   executor.add_node(node);
   executor.spin();
   rclcpp::shutdown();
