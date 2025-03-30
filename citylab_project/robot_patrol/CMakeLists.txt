@@ -13,7 +13,7 @@ find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(std_msgs REQUIRED)
-
+find_package(rclcpp_action REQUIRED)
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights
@@ -25,27 +25,34 @@ if(BUILD_TESTING)
   set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
-rosidl_generate_interfaces(${PROJECT_NAME} "srv/GetDirection.srv"   DEPENDENCIES sensor_msgs)
+rosidl_generate_interfaces(${PROJECT_NAME} "srv/GetDirection.srv" "action/GoToPose.action"   DEPENDENCIES sensor_msgs )
+#rosidl_generate_interfaces(${PROJECT_NAME} "action/GoToPose.action")
 
 
 add_executable(patrol_exe src/patrol.cpp)
 ament_target_dependencies(patrol_exe rclcpp geometry_msgs nav_msgs sensor_msgs)
+
 add_executable(direction_server_exe src/direction_service.cpp)
 rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} rosidl_typesupport_cpp)
 target_link_libraries(direction_server_exe ${cpp_typesupport_target})
-
 ament_target_dependencies(direction_server_exe rclcpp geometry_msgs nav_msgs sensor_msgs )
+
 add_executable(test_service_exe src/test_service.cpp)
 rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} rosidl_typesupport_cpp)
 target_link_libraries(test_service_exe ${cpp_typesupport_target})
-
 ament_target_dependencies(test_service_exe rclcpp geometry_msgs nav_msgs sensor_msgs )
+
 add_executable(patrol_service_exe src/patrol_with_service.cpp)
 rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} rosidl_typesupport_cpp)
 target_link_libraries(patrol_service_exe ${cpp_typesupport_target})
-
 ament_target_dependencies(patrol_service_exe rclcpp geometry_msgs nav_msgs sensor_msgs )
-install(TARGETS patrol_exe patrol_service_exe direction_server_exe test_service_exe DESTINATION lib/${PROJECT_NAME})
+
+add_executable(go_to_pose_exe src/go_to_pose_action.cpp)
+rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} rosidl_typesupport_cpp)
+target_link_libraries(go_to_pose_exe ${cpp_typesupport_target})
+ament_target_dependencies(go_to_pose_exe rclcpp geometry_msgs  nav_msgs sensor_msgs rclcpp_action)
+
+install(TARGETS go_to_pose_exe patrol_exe patrol_service_exe direction_server_exe test_service_exe DESTINATION lib/${PROJECT_NAME})
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 
 

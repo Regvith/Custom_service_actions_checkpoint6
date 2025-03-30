@@ -12,9 +12,9 @@
 using namespace std::chrono;
 using namespace std;
 
-class TestService : public rclcpp::Node {
+class PatrolWithService : public rclcpp::Node {
 public:
-  TestService() : Node("test_service"), state_(FORWARD) {
+  PatrolWithService() : Node("test_service"), state_(FORWARD) {
     // Creating callback groups for concurrency control
     this->cb_laser = this->create_callback_group(
         rclcpp::CallbackGroupType::MutuallyExclusive);
@@ -34,7 +34,8 @@ public:
     // Subscribing to LaserScan topic
     sub_ = this->create_subscription<sensor_msgs::msg::LaserScan>(
         "/scan", 10,
-        std::bind(&TestService::laser_callback, this, std::placeholders::_1),
+        std::bind(&PatrolWithService::laser_callback, this,
+                  std::placeholders::_1),
         sub_opt);
 
     // Creating publisher for cmd_vel
@@ -42,8 +43,8 @@ public:
 
     // Timer to publish velocity commands
     timer_ = this->create_wall_timer(
-        std::chrono::seconds(1), std::bind(&TestService::publish_cmd_vel, this),
-        timer_cb);
+        std::chrono::seconds(1),
+        std::bind(&PatrolWithService::publish_cmd_vel, this), timer_cb);
   }
 
 private:
@@ -58,7 +59,7 @@ private:
     request->laser_data = *msg;
 
     auto future = client_->async_send_request(
-        request, std::bind(&TestService::service_response_callback, this,
+        request, std::bind(&PatrolWithService::service_response_callback, this,
                            std::placeholders::_1));
   }
 
@@ -78,9 +79,15 @@ private:
       // delay_counter_ = 0;
     } else if (direction == "RIGHT") {
       state_ = RIGHT;
+      bias = -1;
+      first_forward_call = false;
+
       // delay_counter_ = 0; // Ensure a full turn before switching
     } else if (direction == "LEFT") {
       state_ = LEFT;
+      bias = 1;
+      first_forward_call = false;
+
       //  delay_counter_ = 0; // Ensure a full turn before switching
     }
   }
@@ -97,13 +104,17 @@ private:
     switch (state_) {
     case FORWARD:
       cmd.linear.x = 0.1;
-      cmd.angular.z = 0.0;
-      pub_->publish(cmd);
+      if (first_forward_call) {
+        cmd.angular.z = 0;
+        // first_forward_call = false;
+      } else
+        cmd.angular.z = bias * 0.04; // drift offset
+      // pub_->publish(cmd);
       break;
     case RIGHT:
       cmd.linear.x = 0.1; // Reduce speed while turning
-      cmd.angular.z = -0.8;
-      pub_->publish(cmd);
+      cmd.angular.z = -0.7;
+      //   pub_->publish(cmd);
       //   if (delay_counter_ > 0) {
       //     delay_counter_--;
       //   } else {
@@ -112,8 +123,8 @@ private:
       break;
     case LEFT:
       cmd.linear.x = 0.1;
-      cmd.angular.z = 0.8;
-      pub_->publish(cmd);
+      cmd.angular.z = 0.7;
+      //  pub_->publish(cmd);
       //   if (delay_counter_ > 0) {
       //     delay_counter_--;
       //   } else {
@@ -122,7 +133,7 @@ private:
       break;
     }
 
-    //  pub_->publish(cmd);
+    pub_->publish(cmd);
   }
 
   rclcpp::Client<robot_patrol::srv::GetDirection>::SharedPtr client_;
@@ -133,11 +144,14 @@ private:
   rclcpp::CallbackGroup::SharedPtr cb_laser;
   rclcpp::CallbackGroup::SharedPtr timer_cb;
   rclcpp::CallbackGroup::SharedPtr client_cb;
+  std::string direction;
+  bool first_forward_call = true;
+  int bias = 1;
 };
 
 int main(int argc, char **argv) {
   rclcpp::init(argc, argv);
-  auto node = std::make_shared<TestService>();
+  auto node = std::make_shared<PatrolWithService>();
   rclcpp::executors::MultiThreadedExecutor executor;
   executor.add_node(node);
   executor.spin();
