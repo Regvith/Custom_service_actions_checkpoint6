@@ -157,21 +157,20 @@ private:
     switch (state_) {
     case FORWARD:
       cmd.linear.x = 0.1;
-      //   if (first_forward_call) {
-      //     cmd.angular.z = 0;
-      //     first_forward_call = false;
-      //   } else
-      //   if (first_forward_call)
-      //     cmd.angular.z = 0;
-      //   else if (last_state_ != FORWARD) {
-      //     cmd.angular.z = bias * 0.65; // turn offset to set it straight
-      //     first_turn_call = true;
-      //     last_state_ = FORWARD;
-      //   } // pub_->publish(cmd);
-      //   else if (first_turn_call) {
-      //     cmd.angular.z = bias * 0.0185; // drift velocity offset for
-      //     correction
-      //   }
+      if (first_forward_call) {
+        cmd.angular.z = 0;
+        first_forward_call = false;
+      } else if (first_forward_call)
+        cmd.angular.z = 0;
+      else if (last_state_ != FORWARD) {
+        cmd.angular.z = bias * 0.65; // turn offset to set it straight
+        first_turn_call = true;
+        last_state_ = FORWARD;
+      } // pub_->publish(cmd);
+      else if (first_turn_call) {
+        cmd.angular.z = bias * 0.0185; // drift velocity offset for
+        correction
+      }
       cmd.angular.z = 0;
 
       break;
