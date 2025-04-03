@@ -171,7 +171,6 @@ private:
         cmd.angular.z = bias * 0.0185; // drift velocity offset for
         correction
       }
-      cmd.angular.z = 0;
 
       break;
     case RIGHT:
